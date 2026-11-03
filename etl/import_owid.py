@@ -36,24 +36,30 @@ CHARTS = [
 ]
 
 
-def main() -> None:
-    failed: list[str] = []
+def import_all() -> list[dict]:
+    results: list[dict] = []
     with Session(get_engine()) as session:
         # The observation FK points at the country table, so that is the set
         # that counts (not the cached World Bank file).
         valid_iso3 = set(session.scalars(select(Country.iso3)))
         if not valid_iso3:
-            raise SystemExit(
-                "no countries in the database; "
-                "run `python -m etl.import_worldbank` first"
-            )
+            results.append({
+                "source": SOURCE_NAME, "item": "countries", "status": "failed",
+                "message": "no countries in the database; load the World Bank countries first",
+            })
+
+            return results
+
         source_id = get_or_create_source(session, SOURCE_NAME, SOURCE_URL)
         session.commit()
 
         for code, name, unit, filename in CHARTS:
             path = RAW_DIR / filename
             if not path.exists():
-                print(f"{code:<22} SKIP (missing {path.name})")
+                results.append({
+                    "source": SOURCE_NAME, "item": code, "status": "skip",
+                    "message": f"missing {path.name}",
+                })
                 continue
 
             try:
@@ -67,15 +73,30 @@ def main() -> None:
                     session, SOURCE_NAME, code, read_source_url(path), loaded
                 )
                 session.commit()
-                print(
-                    f"{code:<22} raw={len(raw):>6}  "
-                    f"clean={len(cleaned):>6}  loaded={loaded:>6}"
-                )
-            except (ValueError, OSError, SQLAlchemyError):
+                results.append({
+                    "source": SOURCE_NAME, "item": code, "status": "ok",
+                    "message": f"raw={len(raw)} clean={len(cleaned)} loaded={loaded}",
+                })
+            except (ValueError, OSError, SQLAlchemyError) as exc:
                 session.rollback()
                 logger.exception("%s: import failed", code)
-                failed.append(code)
+                results.append({
+                    "source": SOURCE_NAME, "item": code, "status": "failed",
+                    "message": f"{type(exc).__name__}: {exc}",
+                })
 
+    return results
+
+
+def main() -> None:
+    results = import_all()
+    for result in results:
+        print(
+            f"{result['source']:<18} {result['item']:<22} "
+            f"{result['status']:<8} {result['message']}"
+        )
+
+    failed = [result["item"] for result in results if result["status"] == "failed"]
     if failed:
         raise SystemExit(f"{len(failed)} import(s) failed: {', '.join(failed)}")
 

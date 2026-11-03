@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Global health observations</h1>
+
+<section>
+    <div class="grid">
+        <form method="post" action="/actions/extract">
+            <button type="submit" class="secondary">Extract fresh data from sources</button>
+        </form>
+        <form method="post" action="/actions/load">
+            <button type="submit" class="secondary">Transform &amp; load data from local JSON/CSV files</button>
+        </form>
+    </div>
+    <small>Each action runs synchronously and may take 30 to 90 seconds.</small>
+</section>
+
+<hr>
+
+<form method="get">
+    <div class="grid">
+        <select name="country">
+            <option value="">All countries</option>
+            {% for c in countries %}
+            <option value="{{ c.iso3 }}" {% if c.iso3 == filters.country %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="indicator">
+            <option value="">All indicators</option>
+            {% for i in indicators %}
+            <option value="{{ i.code }}" {% if i.code == filters.indicator %}selected{% endif %}>{{ i.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="region">
+            <option value="">All regions</option>
+            {% for r in regions %}
+            <option value="{{ r }}" {% if r == filters.region %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="grid">
+        <input type="number" name="year_from" placeholder="From year" value="{{ filters.year_from or '' }}">
+        <input type="number" name="year_to" placeholder="To year" value="{{ filters.year_to or '' }}">
+        <button type="submit">Apply filters</button>
+    </div>
+</form>
+
+<p>{{ total }} rows · page {{ page }} of {{ pages }}</p>
+
+<div class="overflow-auto">
+<table class="striped">
+    <thead>
+        <tr>
+            <th>Country</th>
+            <th>Indicator</th>
+            <th>Year</th>
+            <th>Sex</th>
+            <th>Value</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+        <tr>
+            <td>{{ r.country }} ({{ r.iso3 }})</td>
+            <td>{{ r.indicator }}</td>
+            <td>{{ r.year }}</td>
+            <td>{{ r.sex }}</td>
+            <td>{{ "%.2f"|format(r.value) if r.value is not none else "-" }}</td>
+            <td>{{ r.unit or "" }}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="6">No data matches these filters.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<nav>
+    <ul>
+        {% if prev_url %}<li><a href="{{ prev_url }}">Previous</a></li>{% endif %}
+        {% if next_url %}<li><a href="{{ next_url }}">Next</a></li>{% endif %}
+    </ul>
+</nav>
+
+{% endblock %}
