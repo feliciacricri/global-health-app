@@ -38,3 +38,7 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
    ```
    copy .env.example .env
    ```
+6. Create the database schema:
+   ```
+   alembic upgrade head
+   ```
