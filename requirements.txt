@@ -7,3 +7,5 @@ requests
 fastapi
 uvicorn[standard]
 jinja2
+pytest
+httpx2

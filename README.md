@@ -13,7 +13,7 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
 | Database | PostgreSQL, SQLAlchemy 2.x, Alembic, psycopg |
 | Backend REST API | FastAPI, Uvicorn, Pydantic |
 | UI | Jinja2 templates |
-| Testing | pytest, httpx |
+| Testing | pytest, httpx2 |
 
 ## Local setup
 
@@ -42,3 +42,16 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
    ```
    alembic upgrade head
    ```
+
+## Running the tests
+
+```
+python -m pytest
+```
+
+The API controller tests in `tests/` need a reachable PostgreSQL. They use
+`TEST_DATABASE_URL`, or `DATABASE_URL` if that is not set, but never touch the
+application data: each run creates a temporary `test_<random>` schema, rolls
+back every test, and drops the schema at the end. Without a database those
+tests are skipped. The Extract and Load actions are stubbed, so the tests make
+no network calls.
