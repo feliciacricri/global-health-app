@@ -11,7 +11,7 @@ from app.dependencies import get_observation_service
 from app.domain import ObservationCriteria
 from app.services.observation_service import ObservationService
 
-router = APIRouter()
+router = APIRouter(include_in_schema=False)
 
 
 def observation_criteria(

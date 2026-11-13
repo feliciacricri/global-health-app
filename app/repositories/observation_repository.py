@@ -44,8 +44,11 @@ class ObservationRepository:
         )
         return self._session.scalar(query) or 0
 
-    def list_countries(self) -> tuple[Option, ...]:
+    def list_countries(self, region: str | None = None) -> tuple[Option, ...]:
+        """All countries, or only those in ``region``, sorted by name."""
         query = select(Country.iso3, Country.name).order_by(Country.name)
+        if region is not None:
+            query = query.where(Country.region == region)
         return tuple(
             Option(value=iso3, label=name)
             for iso3, name in self._session.execute(query)

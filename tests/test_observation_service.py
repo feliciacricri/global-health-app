@@ -29,6 +29,7 @@ class FakeRepository:
     def __init__(self, total_items: int) -> None:
         self.items = [_item(2000 + index) for index in range(total_items)]
         self.find_calls: list[tuple[ObservationCriteria, int, int]] = []
+        self.list_countries_calls: list[str | None] = []
 
     def find(
         self, criteria: ObservationCriteria, *, limit: int, offset: int
@@ -39,7 +40,8 @@ class FakeRepository:
     def count(self, criteria: ObservationCriteria) -> int:
         return len(self.items)
 
-    def list_countries(self) -> tuple[Option, ...]:
+    def list_countries(self, region: str | None = None) -> tuple[Option, ...]:
+        self.list_countries_calls.append(region)
         return (Option("ROU", "Romania"),)
 
     def list_indicators(self) -> tuple[Option, ...]:
@@ -112,3 +114,10 @@ def test_filter_options_come_from_the_repository() -> None:
         indicators=(Option("WHOSIS_000001", "Life expectancy at birth"),),
         regions=("Europe & Central Asia",),
     )
+
+
+def test_countries_can_be_listed_per_region() -> None:
+    service, repository = _service(total_items=0)
+
+    assert service.list_countries("Europe & Central Asia") == (Option("ROU", "Romania"),)
+    assert repository.list_countries_calls == ["Europe & Central Asia"]

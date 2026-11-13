@@ -2,7 +2,7 @@
 
 Lab 1 project — "Health spending, immunization and life expectancy across countries, 2000–2023."
 
-A layered Python application that ingests public health data (WHO GHO, World Bank, Our World in Data) into a PostgreSQL database through an ETL pipeline, and shows it in server-side rendered web pages (FastAPI + Jinja2). A REST API and client-side rendering are planned for a later lab.
+A layered Python application that ingests public health data (WHO GHO, World Bank, Our World in Data) into a PostgreSQL database through an ETL pipeline, and shows it in server-side rendered web pages (FastAPI + Jinja2, Lab 3) and through a REST API with a client-side rendered page (Lab 4).
 
 ## Tech stack
 
@@ -12,6 +12,7 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
 | Data cleaning | `pandas`, `pycountry` |
 | Database | PostgreSQL, SQLAlchemy 2.x, Alembic, psycopg |
 | Web (server-side rendering) | FastAPI, Uvicorn, Jinja2 templates |
+| REST API | FastAPI, pydantic (OpenAPI docs at `/api/docs`) |
 | Testing | pytest, httpx2 |
 
 ## Local setup
@@ -44,12 +45,14 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
 
 ## Architecture
 
-The web app follows the MVT pattern (model, view, template) and is split into
-layers; each layer only calls the one below it:
+The web app is split into layers; each layer only calls the one below it.
+The HTML pages follow the MVT pattern (model, view, template), and the REST
+controllers return JSON built from the same services:
 
 | Layer | Package | Responsibility |
 |---|---|---|
 | Presentation | `app/controllers/`, `app/templates/` | FastAPI routes read the request, call one service, render a Jinja2 template |
+| Presentation (REST) | `app/controllers/api/` | FastAPI routes under `/api` read the request, call one service, return JSON (pydantic schemas in `schemas.py`); service errors become HTTP status codes |
 | Service | `app/services/` | Business rules: paging, filter choices, running the ETL steps |
 | Data access | `app/repositories/` | All SQLAlchemy queries; returns the plain types in `app/domain.py` |
 | Model | `app/models.py`, `app/database.py` | ORM tables and database sessions |
@@ -57,6 +60,42 @@ layers; each layer only calls the one below it:
 `app/dependencies.py` wires the layers together with FastAPI `Depends`. The ETL
 pipeline lives in `etl/` (extract, transform, clean, load); `etl/import_runner.py`
 holds the Transform & Load loop shared by the per-source import scripts.
+
+## REST API
+
+REST (REpresentational State Transfer) exposes data as **resources**, each
+with its own URL, and uses the HTTP **verb** to say what to do with it. The
+server keeps no session between requests (each request is stateless), the
+body is a representation of the resource (JSON here), and the **status code**
+says how it went.
+
+| Verb | Meaning | Example | Safe | Idempotent |
+|---|---|---|---|---|
+| `GET` | Read a resource or a list | `GET /api/countries` | yes | yes |
+| `POST` | Create a resource, or run an action | `POST /api/observations` | no | no |
+| `PUT` | Replace a resource completely | `PUT /api/indicators/SH.IMM.MEAS` | no | yes |
+| `PATCH` | Change some fields of a resource | `PATCH /api/countries/ROU` | no | no* |
+| `DELETE` | Remove a resource | `DELETE /api/observations/42` | no | yes |
+
+*Safe* means the request changes nothing on the server, so it can be cached,
+prefetched or retried freely. *Idempotent* means sending it twice has the same
+effect as sending it once (\*PATCH can be written to be idempotent, but HTTP
+does not require it). Common status codes: `200 OK`, `201 Created`,
+`204 No Content`, `400 Bad Request`, `404 Not Found`,
+`422 Unprocessable Content` (the request is well formed but its values are
+not valid), `500 Internal Server Error`.
+
+This API only reads data, so all its endpoints are `GET`. The ETL buttons
+change data, so they are `POST` forms (`/actions/extract`, `/actions/load`).
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/regions` | Region names |
+| `GET /api/countries?region=Europe %26 Central Asia` | Countries (`iso3`, `name`), all or of one region |
+| `GET /api/indicators` | Indicators (`code`, `name`) |
+
+With the app running, the interactive OpenAPI documentation is at
+http://127.0.0.1:8000/api/docs.
 
 ## Running the app
 
@@ -73,7 +112,8 @@ Open http://127.0.0.1:8000, click **Extract** to download the raw data, then
 python -m pytest
 ```
 
-The API controller tests in `tests/` need a reachable PostgreSQL. They use
+The repository tests and the full-stack controller tests in `tests/` need a
+reachable PostgreSQL; the service tests use in-memory fakes and always run. They use
 `TEST_DATABASE_URL`, or `DATABASE_URL` if that is not set, but never touch the
 application data: each run creates a temporary `test_<random>` schema, rolls
 back every test, and drops the schema at the end. Without a database those

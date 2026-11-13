@@ -1,26 +1,33 @@
 """Application entry point: ``uvicorn app.main:app``.
 
-Layers (MVT, server-side rendering only):
+Layers:
 - data access: ``app.repositories`` (SQLAlchemy queries)
-- service: ``app.services`` (paging rules, ETL orchestration)
-- presentation: ``app.controllers`` (FastAPI routes) + ``app/templates`` (Jinja2)
+- service: ``app.services`` (business rules, ETL orchestration)
+- presentation: ``app.controllers``
+  - server-side rendering (MVT): routes + ``app/templates`` (Jinja2)
+  - REST API: ``app.controllers.api`` (JSON under ``/api``)
 """
 
 from fastapi import FastAPI
 
 from app.controllers import etl_controller, observation_controller
+from app.controllers.api import reference_data_api
+
+API_DOCS_URL = "/api/docs"
 
 
 def create_app() -> FastAPI:
-    # No JSON API in this lab, so no OpenAPI schema or /docs pages either.
+    # The OpenAPI schema and its docs page describe only the JSON API; the
+    # HTML routes are left out of it.
     app = FastAPI(
         title="Global Health Data Platform",
-        openapi_url=None,
-        docs_url=None,
+        openapi_url="/api/openapi.json",
+        docs_url=API_DOCS_URL,
         redoc_url=None,
     )
     app.include_router(observation_controller.router)
     app.include_router(etl_controller.router)
+    app.include_router(reference_data_api.router)
     return app
 
 

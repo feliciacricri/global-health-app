@@ -132,3 +132,11 @@ def test_regions_are_distinct_and_skip_missing_ones(
     repository: ObservationRepository,
 ) -> None:
     assert repository.list_regions() == ("Europe & Central Asia", "Sub-Saharan Africa")
+
+
+def test_countries_of_one_region(repository: ObservationRepository) -> None:
+    assert repository.list_countries("Europe & Central Asia") == (
+        Option("FRA", "France"),
+        Option("ROU", "Romania"),
+    )
+    assert repository.list_countries("Antarctica") == ()

@@ -1,9 +1,10 @@
-"""Service layer for browsing observations: paging rules and filter choices."""
+"""Service layer for browsing observations: paging rules and the lookup values
+(countries, indicators, regions) used to filter them."""
 
 import math
 from dataclasses import dataclass
 
-from app.domain import FilterOptions, ObservationCriteria, ObservationListItem
+from app.domain import FilterOptions, ObservationCriteria, ObservationListItem, Option
 from app.repositories.observation_repository import ObservationRepository
 
 DEFAULT_PAGE_SIZE = 50
@@ -56,7 +57,16 @@ class ObservationService:
 
     def get_filter_options(self) -> FilterOptions:
         return FilterOptions(
-            countries=self._repository.list_countries(),
-            indicators=self._repository.list_indicators(),
-            regions=self._repository.list_regions(),
+            countries=self.list_countries(),
+            indicators=self.list_indicators(),
+            regions=self.list_regions(),
         )
+
+    def list_countries(self, region: str | None = None) -> tuple[Option, ...]:
+        return self._repository.list_countries(region)
+
+    def list_indicators(self) -> tuple[Option, ...]:
+        return self._repository.list_indicators()
+
+    def list_regions(self) -> tuple[str, ...]:
+        return self._repository.list_regions()
