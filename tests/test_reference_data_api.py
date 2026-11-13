@@ -49,5 +49,6 @@ def test_openapi_describes_only_the_json_api(client: TestClient) -> None:
     assert sorted(paths) == [
         "/api/countries",
         "/api/indicators",
+        "/api/indicators/{indicator_code}/period-averages",
         "/api/regions",
     ]

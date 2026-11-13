@@ -53,7 +53,7 @@ controllers return JSON built from the same services:
 |---|---|---|
 | Presentation | `app/controllers/`, `app/templates/` | FastAPI routes read the request, call one service, render a Jinja2 template |
 | Presentation (REST) | `app/controllers/api/` | FastAPI routes under `/api` read the request, call one service, return JSON (pydantic schemas in `schemas.py`); service errors become HTTP status codes |
-| Service | `app/services/` | Business rules: paging, filter choices, running the ETL steps |
+| Service | `app/services/` | Business rules: paging, filter choices, per-period averages, running the ETL steps |
 | Data access | `app/repositories/` | All SQLAlchemy queries; returns the plain types in `app/domain.py` |
 | Model | `app/models.py`, `app/database.py` | ORM tables and database sessions |
 
@@ -93,9 +93,25 @@ change data, so they are `POST` forms (`/actions/extract`, `/actions/load`).
 | `GET /api/regions` | Region names |
 | `GET /api/countries?region=Europe %26 Central Asia` | Countries (`iso3`, `name`), all or of one region |
 | `GET /api/indicators` | Indicators (`code`, `name`) |
+| `GET /api/indicators/{code}/period-averages?country=ROU&country=FRA&first_year=2000&last_year=2023&period_years=5` | The indicator's average per country for each period of `period_years` years (only both-sexes values, rounded to 2 decimals; `null` where a country has no data) |
 
-With the app running, the interactive OpenAPI documentation is at
-http://127.0.0.1:8000/api/docs.
+Example: `GET /api/indicators/OWID_LIFE_EXPECTANCY/period-averages?country=ROU&country=FRA`
+
+```json
+{
+  "indicator": {"code": "OWID_LIFE_EXPECTANCY", "name": "Life expectancy (OWID)", "unit": "years"},
+  "periods": [{"start": 2000, "end": 2004, "label": "2000–2004"}, "…",
+              {"start": 2020, "end": 2023, "label": "2020–2023"}],
+  "series": [
+    {"country_iso3": "FRA", "country_name": "France", "averages": [79.49, 80.85, 81.87, 82.46, 82.58]},
+    {"country_iso3": "ROU", "country_name": "Romania", "averages": [71.01, 72.64, 74.37, 75.04, 74.5]}
+  ]
+}
+```
+
+An unknown indicator returns `404`; reversed years, a period under 1 year or
+more than 20 countries return `422`. With the app running, the interactive
+OpenAPI documentation is at http://127.0.0.1:8000/api/docs.
 
 ## Running the app
 
@@ -113,7 +129,8 @@ python -m pytest
 ```
 
 The repository tests and the full-stack controller tests in `tests/` need a
-reachable PostgreSQL; the service tests use in-memory fakes and always run. They use
+reachable PostgreSQL; the service tests and most REST controller tests use
+in-memory fakes and always run. They use
 `TEST_DATABASE_URL`, or `DATABASE_URL` if that is not set, but never touch the
 application data: each run creates a temporary `test_<random>` schema, rolls
 back every test, and drops the schema at the end. Without a database those

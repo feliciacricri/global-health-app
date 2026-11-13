@@ -11,7 +11,7 @@ Layers:
 from fastapi import FastAPI
 
 from app.controllers import etl_controller, observation_controller
-from app.controllers.api import reference_data_api
+from app.controllers.api import period_average_api, reference_data_api
 
 API_DOCS_URL = "/api/docs"
 
@@ -28,6 +28,7 @@ def create_app() -> FastAPI:
     app.include_router(observation_controller.router)
     app.include_router(etl_controller.router)
     app.include_router(reference_data_api.router)
+    app.include_router(period_average_api.router)
     return app
 
 
