@@ -2,7 +2,7 @@
 
 Lab 1 project — "Health spending, immunization and life expectancy across countries, 2000–2023."
 
-A layered Python application that ingests public health data (WHO GHO, World Bank, Our World in Data) into a PostgreSQL database, exposes it through a FastAPI REST API, and renders it in a simple web UI.
+A layered Python application that ingests public health data (WHO GHO, World Bank, Our World in Data) into a PostgreSQL database through an ETL pipeline, and shows it in server-side rendered web pages (FastAPI + Jinja2). A REST API and client-side rendering are planned for a later lab.
 
 ## Tech stack
 
@@ -11,9 +11,8 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
 | Data retrieval | `requests`, `pandas` |
 | Data cleaning | `pandas`, `pycountry` |
 | Database | PostgreSQL, SQLAlchemy 2.x, Alembic, psycopg |
-| Backend REST API | FastAPI, Uvicorn, Pydantic |
-| UI | Jinja2 templates |
-| Testing | pytest, httpx |
+| Web (server-side rendering) | FastAPI, Uvicorn, Jinja2 templates |
+| Testing | pytest, httpx2 |
 
 ## Local setup
 
@@ -42,3 +41,12 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
    ```
    alembic upgrade head
    ```
+
+## Running the tests
+
+```
+python -m pytest
+```
+
+The Extract and Load actions are stubbed, so the tests make no network calls
+and need no database.
