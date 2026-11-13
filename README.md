@@ -13,7 +13,7 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
 | Database | PostgreSQL, SQLAlchemy 2.x, Alembic, psycopg |
 | Web (server-side rendering) | FastAPI, Uvicorn, Jinja2 templates |
 | REST API | FastAPI, pydantic (OpenAPI docs at `/api/docs`) |
-| Client-side rendering | JavaScript ES modules (no build step) |
+| Client-side rendering | JavaScript ES modules (no build step), Chart.js |
 | Testing | pytest, httpx2 |
 
 ## Local setup
@@ -119,20 +119,21 @@ OpenAPI documentation is at http://127.0.0.1:8000/api/docs.
 `/` (Lab 3) is rendered on the server: each filter change reloads the page,
 and the HTML arrives complete. `/period-averages` (Lab 4) is rendered in the
 browser: the server sends an empty page shell, the JavaScript calls the REST
-API, and builds the page from the JSON. Changing a filter fetches only new
-data; the page never reloads.
+API, and builds the table and the chart from the JSON. Changing a filter
+fetches only new data; the page never reloads.
 
-The page starts with its filters: an indicator (default: life expectancy),
-a region (default: Europe & Central Asia) and the countries of that region,
-picked from a drop-down (five by default, at most 8). The JavaScript in
-`app/static/js/` uses the same layers as the backend:
+The page compares an indicator, by default life expectancy, averaged over
+5-year periods (2000–2004, …, 2020–2023), for countries picked from a
+drop-down (default: Europe & Central Asia, five countries; at most 8, one
+color per line). The JavaScript in `app/static/js/` uses the same layers as
+the backend:
 
 | Layer | File | Responsibility |
 |---|---|---|
 | Data access | `api-client.js` | The only module that calls `fetch`; one function per endpoint |
-| Business logic | `period-averages-model.js` | Defaults and selection rules |
-| Presentation | `period-averages-view.js` | Draws the drop-downs; no logic |
-| Controller | `period-averages-page.js` | Reacts to the filters, connects the layers |
+| Business logic | `period-averages-model.js` | Defaults, selection rules, stable colors per country, report → table rows / chart lines |
+| Presentation | `period-averages-view.js` | Draws the drop-downs, the table and the Chart.js line chart; no logic |
+| Controller | `period-averages-page.js` | Reacts to the filters, cancels outdated requests, connects the layers |
 
 ## Running the app
 

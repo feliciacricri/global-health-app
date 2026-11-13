@@ -25,7 +25,7 @@ def test_page_shell_loads_the_client_side_code(client: TestClient) -> None:
     assert 'href="/api/docs"' in html
     # Filled in by the browser, not by the server.
     assert '<select id="indicator"></select>' in html
-    assert '<ul id="country-list"></ul>' in html
+    assert '<table id="averages-table" class="striped"></table>' in html
 
 
 @pytest.mark.parametrize("script", SCRIPTS)

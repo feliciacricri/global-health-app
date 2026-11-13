@@ -3,6 +3,38 @@
 
 {% block head %}
 <style>
+    /* Chart colors as tokens, so dark mode has its own validated steps.
+       Categorical order is fixed: a country keeps its color while selected. */
+    #period-averages {
+        --chart-surface: #ffffff;
+        --chart-text: #52514e;
+        --chart-grid: #e4e3df;
+        --series-1: #2a78d6;
+        --series-2: #eb6834;
+        --series-3: #1baf7a;
+        --series-4: #eda100;
+        --series-5: #e87ba4;
+        --series-6: #008300;
+        --series-7: #6250d6;
+        --series-8: #e34948;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) #period-averages {
+            --chart-surface: #13171f;
+            --chart-text: #c3c2b7;
+            --chart-grid: #2c2f36;
+            --series-1: #3987e5;
+            --series-2: #d95926;
+            --series-3: #199e70;
+            --series-4: #c98500;
+            --series-5: #d55181;
+            --series-6: #008300;
+            --series-7: #9085e9;
+            --series-8: #e66767;
+        }
+    }
+    #period-averages .chart-box { position: relative; height: 26rem; }
+    #period-averages .number { text-align: right; font-variant-numeric: tabular-nums; }
     #period-averages #country-list { max-height: 20rem; overflow-y: auto; }
     #period-averages #status.error { color: var(--pico-del-color); }
 </style>
@@ -14,12 +46,14 @@
     <p>
         The average of an indicator over periods of years ({{ first_year }}–{{ last_year }}),
         per country. This page is rendered in the browser: it asks the
-        <a href="{{ api_docs_url }}">REST API</a> for JSON and builds the page from it.
+        <a href="{{ api_docs_url }}">REST API</a> for JSON and draws the table and
+        the chart from it.
     </p>
 
     <div class="grid">
         <label>Indicator <select id="indicator"></select></label>
         <label>Region <select id="region"></select></label>
+        <label>Period length <select id="period-years"></select></label>
     </div>
     <label for="country-summary">Countries (at most {{ max_countries }})</label>
     <details class="dropdown">
@@ -28,7 +62,18 @@
     </details>
 
     <p id="status" role="status" aria-live="polite">Loading…</p>
+
+    <figure>
+        <div class="chart-box">
+            <canvas id="averages-chart" role="img" aria-label="Line chart of the averages per period; the same values are in the table below"></canvas>
+        </div>
+    </figure>
+
+    <div class="overflow-auto">
+        <table id="averages-table" class="striped"></table>
+    </div>
 </section>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script type="module" src="{{ url_for('static', path='js/period-averages-page.js') }}"></script>
 {% endblock %}
