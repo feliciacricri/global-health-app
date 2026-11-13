@@ -5,8 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Global Health Data Platform{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    {% block head %}{% endblock %}
 </head>
 <body>
+    <header class="container">
+        <nav>
+            <ul><li><strong>Global Health Data Platform</strong></li></ul>
+            <ul>
+                <li><a href="/">Observations</a></li>
+                <li><a href="/period-averages">Averages per period</a></li>
+            </ul>
+        </nav>
+    </header>
     <main class="container">
         {% block content %}{% endblock %}
     </main>

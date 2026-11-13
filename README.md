@@ -13,6 +13,7 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
 | Database | PostgreSQL, SQLAlchemy 2.x, Alembic, psycopg |
 | Web (server-side rendering) | FastAPI, Uvicorn, Jinja2 templates |
 | REST API | FastAPI, pydantic (OpenAPI docs at `/api/docs`) |
+| Client-side rendering | JavaScript ES modules (no build step) |
 | Testing | pytest, httpx2 |
 
 ## Local setup
@@ -113,6 +114,26 @@ An unknown indicator returns `404`; reversed years, a period under 1 year or
 more than 20 countries return `422`. With the app running, the interactive
 OpenAPI documentation is at http://127.0.0.1:8000/api/docs.
 
+## Client-side rendering
+
+`/` (Lab 3) is rendered on the server: each filter change reloads the page,
+and the HTML arrives complete. `/period-averages` (Lab 4) is rendered in the
+browser: the server sends an empty page shell, the JavaScript calls the REST
+API, and builds the page from the JSON. Changing a filter fetches only new
+data; the page never reloads.
+
+The page starts with its filters: an indicator (default: life expectancy),
+a region (default: Europe & Central Asia) and the countries of that region,
+picked from a drop-down (five by default, at most 8). The JavaScript in
+`app/static/js/` uses the same layers as the backend:
+
+| Layer | File | Responsibility |
+|---|---|---|
+| Data access | `api-client.js` | The only module that calls `fetch`; one function per endpoint |
+| Business logic | `period-averages-model.js` | Defaults and selection rules |
+| Presentation | `period-averages-view.js` | Draws the drop-downs; no logic |
+| Controller | `period-averages-page.js` | Reacts to the filters, connects the layers |
+
 ## Running the app
 
 ```
@@ -120,7 +141,9 @@ uvicorn app.main:app --reload
 ```
 
 Open http://127.0.0.1:8000, click **Extract** to download the raw data, then
-**Transform & load** to fill the database.
+**Transform & load** to fill the database. The client-side page is at
+http://127.0.0.1:8000/period-averages and the API docs at
+http://127.0.0.1:8000/api/docs.
 
 ## Running the tests
 
