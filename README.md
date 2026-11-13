@@ -42,11 +42,40 @@ A layered Python application that ingests public health data (WHO GHO, World Ban
    alembic upgrade head
    ```
 
+## Architecture
+
+The web app follows the MVT pattern (model, view, template) and is split into
+layers; each layer only calls the one below it:
+
+| Layer | Package | Responsibility |
+|---|---|---|
+| Presentation | `app/controllers/`, `app/templates/` | FastAPI routes read the request, call one service, render a Jinja2 template |
+| Service | `app/services/` | Business rules: paging, filter choices, running the ETL steps |
+| Data access | `app/repositories/` | All SQLAlchemy queries; returns the plain types in `app/domain.py` |
+| Model | `app/models.py`, `app/database.py` | ORM tables and database sessions |
+
+`app/dependencies.py` wires the layers together with FastAPI `Depends`. The ETL
+pipeline lives in `etl/` (extract, transform, clean, load); `etl/import_runner.py`
+holds the Transform & Load loop shared by the per-source import scripts.
+
+## Running the app
+
+```
+uvicorn app.main:app --reload
+```
+
+Open http://127.0.0.1:8000, click **Extract** to download the raw data, then
+**Transform & load** to fill the database.
+
 ## Running the tests
 
 ```
 python -m pytest
 ```
 
-The Extract and Load actions are stubbed, so the tests make no network calls
-and need no database.
+The API controller tests in `tests/` need a reachable PostgreSQL. They use
+`TEST_DATABASE_URL`, or `DATABASE_URL` if that is not set, but never touch the
+application data: each run creates a temporary `test_<random>` schema, rolls
+back every test, and drops the schema at the end. Without a database those
+tests are skipped. The Extract and Load actions are stubbed, so the tests make
+no network calls.

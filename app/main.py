@@ -1,13 +1,14 @@
 """Application entry point: ``uvicorn app.main:app``.
 
 Layers (MVT, server-side rendering only):
-- service: ``app.services`` (ETL orchestration)
+- data access: ``app.repositories`` (SQLAlchemy queries)
+- service: ``app.services`` (paging rules, ETL orchestration)
 - presentation: ``app.controllers`` (FastAPI routes) + ``app/templates`` (Jinja2)
 """
 
 from fastapi import FastAPI
 
-from app.controllers import etl_controller
+from app.controllers import etl_controller, observation_controller
 
 
 def create_app() -> FastAPI:
@@ -18,6 +19,7 @@ def create_app() -> FastAPI:
         docs_url=None,
         redoc_url=None,
     )
+    app.include_router(observation_controller.router)
     app.include_router(etl_controller.router)
     return app
 
